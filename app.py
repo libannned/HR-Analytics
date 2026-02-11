@@ -14,6 +14,45 @@ TARGET_COL = "event"
 TENURE_COL = "stag"
 INDUSTRY_COL = "industry"
 
+FIELD_LABELS = {
+    "event": "Turnover Outcome",
+    "stag": "Tenure",
+    "gender": "Gender",
+    "age": "Age",
+    "industry": "Department",
+    "profession": "Job Function",
+    "traffic": "Recruitment Source",
+    "coach": "Coaching Support",
+    "head_gender": "Manager Gender",
+    "greywage": "Compensation Type",
+    "way": "Commute Method",
+    "extraversion": "Extraversion",
+    "independ": "Independence",
+    "selfcontrol": "Self-Control",
+    "anxiety": "Anxiety",
+    "novator": "Innovation Openness",
+    "risk_score": "Risk Score",
+    "risk_level": "Risk Level",
+}
+
+VALUE_LABELS = {
+    "gender": {"f": "Female", "m": "Male"},
+    "head_gender": {"f": "Female", "m": "Male"},
+    "coach": {"yes": "Has coach", "no": "No coach", "my head": "Direct manager"},
+    "greywage": {"white": "Formal/official pay", "grey": "Informal/gray pay"},
+    "way": {"bus": "Bus", "car": "Car", "foot": "Walk"},
+    "traffic": {
+        "youjs": "Online job board",
+        "empjs": "Employer career site",
+        "rabrecNErab": "Recruiter/network channel",
+        "recNErab": "Recruiter channel",
+        "referal": "Employee referral",
+        "friends": "Friend/network referral",
+        "advert": "Advertisement",
+        "KA": "Campus/agency channel",
+    },
+}
+
 
 def read_table(file_or_path):
     if isinstance(file_or_path, str):
@@ -31,6 +70,88 @@ def read_table(file_or_path):
     except UnicodeDecodeError:
         file_or_path.seek(0)
         return pd.read_csv(file_or_path, encoding="latin1")
+
+
+def pretty_label(col_name):
+    return FIELD_LABELS.get(col_name, col_name.replace("_", " ").title())
+
+
+def pretty_value(col_name, value):
+    mapped = VALUE_LABELS.get(col_name, {}).get(str(value), value)
+    return mapped
+
+
+def build_choice_map(col_name, raw_values):
+    choice_map = {}
+    for raw in raw_values:
+        display = str(pretty_value(col_name, raw))
+        if display in choice_map and choice_map[display] != raw:
+            display = f"{display} ({raw})"
+        choice_map[display] = raw
+    return choice_map
+
+
+def to_display_dataframe(df):
+    display_df = df.copy()
+    for col in display_df.columns:
+        if col in VALUE_LABELS:
+            display_df[col] = display_df[col].map(
+                lambda v: pretty_value(col, v) if pd.notna(v) else v
+            )
+    renamed = {c: pretty_label(c) for c in display_df.columns}
+    return display_df.rename(columns=renamed)
+
+
+def inject_custom_styles():
+    st.markdown(
+        """
+        <style>
+        .app-subtitle {
+            color: #475569;
+            font-size: 1rem;
+            margin-bottom: 0.8rem;
+        }
+        .section-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+        }
+        .risk-chip {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 2px 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid transparent;
+        }
+        .risk-chip.low {
+            background: #ecfdf3;
+            color: #065f46;
+            border-color: #a7f3d0;
+        }
+        .risk-chip.medium {
+            background: #fffbeb;
+            color: #92400e;
+            border-color: #fde68a;
+        }
+        .risk-chip.high {
+            background: #fef2f2;
+            color: #991b1b;
+            border-color: #fecaca;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def risk_chip(level):
+    level = str(level).lower()
+    css = "low" if level == "low" else "medium" if level == "medium" else "high"
+    text = "Low" if css == "low" else "Medium" if css == "medium" else "High"
+    return f'<span class="risk-chip {css}">{text} Risk</span>'
 
 
 @st.cache_data(show_spinner=False)
@@ -193,23 +314,39 @@ def render_risk_interpretation_guide():
    Start manager plus HR intervention in 48 to 72 hours, build a formal retention plan, and follow up weekly.
 
 **Factor-Based Translation**
-- High `anxiety`: potential stress/support issue.
-- Low `selfcontrol`: may need clearer goals and structured planning.
-- Short `stag` (tenure): onboarding/early-tenure risk.
-- `coach = no`: add mentor/coach support.
-- `greywage = grey`: possible compensation trust/fairness issue.
+- High Anxiety: potential stress/support issue.
+- Low Self-Control: may need clearer goals and structured planning.
+- Short Tenure: onboarding/early-tenure risk.
+- No Coaching Support: add mentor/coach support.
+- Informal/Gray Pay: possible compensation trust/fairness issue.
 
 **Important Note**
 - This model is an early-warning signal, not proof. Confirm with manager context and direct employee conversation.
 """
         )
 
+    with st.expander("Data Dictionary (Plain English)", expanded=False):
+        dictionary_rows = [
+            ("Tenure", "Time employee has been with the organization."),
+            ("Recruitment Source", "Where employee was hired from (referral, job board, etc.)."),
+            ("Coaching Support", "Whether the employee has coaching/manager support."),
+            ("Compensation Type", "Compensation arrangement category."),
+            ("Extraversion", "How outgoing/social the employee tends to be."),
+            ("Independence", "How self-directed the employee tends to be."),
+            ("Self-Control", "How consistently the employee self-manages tasks/behavior."),
+            ("Anxiety", "Stress or tension tendency level."),
+            ("Innovation Openness", "Willingness to try new approaches."),
+        ]
+        st.table(pd.DataFrame(dictionary_rows, columns=["Factor", "Meaning"]))
+
 
 def main():
     st.set_page_config(page_title="HR Analytics: Turnover Predictor", layout="wide")
+    inject_custom_styles()
     st.title("HR Analytics: Employee Turnover Predictor")
-    st.caption(
-        "Predict turnover risk, identify at-risk employees, filter by department/tenure/risk level, and generate retention actions."
+    st.markdown(
+        '<div class="app-subtitle">Estimate turnover risk, identify employees who may need support, and suggest practical retention actions.</div>',
+        unsafe_allow_html=True,
     )
 
     st.sidebar.header("Data Input")
@@ -237,84 +374,222 @@ def main():
     scored_df = model_bundle["scored_df"].copy()
 
     st.subheader("Model Performance")
-    st.dataframe(score_df.style.format({c: "{:.3f}" for c in score_df.columns if c != "model"}), use_container_width=True)
+    model_score_display = score_df.rename(
+        columns={
+            "model": "Model",
+            "roc_auc": "ROC-AUC",
+            "accuracy": "Accuracy",
+            "precision": "Precision",
+            "recall": "Recall",
+            "f1": "F1 Score",
+        }
+    )
+    st.dataframe(
+        model_score_display.style.format(
+            {c: "{:.3f}" for c in model_score_display.columns if c != "Model"}
+        ),
+        use_container_width=True,
+    )
     st.info(f"Best model by ROC-AUC: {best_name}")
 
     st.subheader("Risk Score Dashboard")
     render_risk_interpretation_guide()
 
-    departments = sorted(scored_df[INDUSTRY_COL].dropna().astype(str).unique()) if INDUSTRY_COL in scored_df.columns else []
+    display_df = to_display_dataframe(scored_df)
+    industry_label = pretty_label(INDUSTRY_COL)
+    tenure_label = pretty_label(TENURE_COL)
+    risk_level_label = pretty_label("risk_level")
+    risk_score_label = pretty_label("risk_score")
+
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Dashboard Filters")
+    departments = (
+        sorted(display_df[industry_label].dropna().astype(str).unique())
+        if industry_label in display_df.columns
+        else []
+    )
     tenure_min = float(scored_df[TENURE_COL].min()) if TENURE_COL in scored_df.columns else 0.0
     tenure_max = float(scored_df[TENURE_COL].max()) if TENURE_COL in scored_df.columns else 0.0
 
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        selected_departments = st.multiselect("Filter by department", departments, default=departments)
-    with c2:
-        selected_risk = st.multiselect("Filter by risk level", ["Low", "Medium", "High"], default=["Low", "Medium", "High"])
-    with c3:
+    with st.sidebar:
+        selected_departments = st.multiselect(
+            "Department", departments, default=departments
+        )
+        selected_risk = st.multiselect(
+            "Risk Level",
+            ["Low", "Medium", "High"],
+            default=["Low", "Medium", "High"],
+        )
         selected_tenure = st.slider(
-            "Filter by tenure",
+            "Tenure Range",
             min_value=tenure_min,
             max_value=tenure_max,
             value=(tenure_min, tenure_max),
         )
 
     filtered = scored_df.copy()
-    if selected_departments and INDUSTRY_COL in filtered.columns:
-        filtered = filtered[filtered[INDUSTRY_COL].astype(str).isin(selected_departments)]
+    filtered_display = display_df.copy()
+
+    if selected_departments and industry_label in filtered_display.columns:
+        selected_idx = filtered_display[
+            filtered_display[industry_label].astype(str).isin(selected_departments)
+        ].index
+        filtered = filtered.loc[selected_idx]
+        filtered_display = filtered_display.loc[selected_idx]
     if selected_risk:
-        filtered = filtered[filtered["risk_level"].astype(str).isin(selected_risk)]
+        selected_idx = filtered_display[
+            filtered_display[risk_level_label].astype(str).isin(selected_risk)
+        ].index
+        filtered = filtered.loc[selected_idx]
+        filtered_display = filtered_display.loc[selected_idx]
     if TENURE_COL in filtered.columns:
         filtered = filtered[
             (filtered[TENURE_COL] >= selected_tenure[0]) & (filtered[TENURE_COL] <= selected_tenure[1])
         ]
+        filtered_display = filtered_display.loc[filtered.index]
 
-    k1, k2, k3 = st.columns(3)
-    k1.metric("Employees (Filtered)", f"{len(filtered):,}")
-    k2.metric("At-Risk (High)", f"{(filtered['risk_level'].astype(str) == 'High').sum():,}")
-    k3.metric("Avg. Risk Score", f"{filtered['risk_score'].mean():.2f}" if len(filtered) else "N/A")
+    tabs = st.tabs(["Overview", "At-Risk Employees", "Manual Prediction", "Guide"])
 
-    v1, v2 = st.columns(2)
-    with v1:
-        risk_counts = filtered["risk_level"].astype(str).value_counts().reindex(["Low", "Medium", "High"], fill_value=0)
-        st.write("Risk level distribution")
-        st.bar_chart(risk_counts)
+    with tabs[0]:
+        st.markdown(
+            '<div class="section-card"><strong>Dashboard Summary</strong><br/>Use sidebar filters to narrow to any team, tenure band, or risk tier.</div>',
+            unsafe_allow_html=True,
+        )
+        k1, k2, k3 = st.columns(3)
+        k1.metric("Employees (Filtered)", f"{len(filtered):,}")
+        k2.metric(
+            "At-Risk (High)",
+            f"{(filtered_display[risk_level_label].astype(str) == 'High').sum():,}",
+        )
+        k3.metric(
+            "Avg. Risk Score",
+            f"{filtered_display[risk_score_label].mean():.2f}" if len(filtered_display) else "N/A",
+        )
 
-    with v2:
-        if INDUSTRY_COL in filtered.columns:
-            by_dept = filtered.groupby(INDUSTRY_COL, dropna=False)["risk_score"].mean().sort_values(ascending=False)
-            st.write("Average risk score by department")
-            st.bar_chart(by_dept)
+        v1, v2 = st.columns(2)
+        with v1:
+            risk_counts = (
+                filtered_display[risk_level_label]
+                .astype(str)
+                .value_counts()
+                .reindex(["Low", "Medium", "High"], fill_value=0)
+            )
+            st.write("Risk level distribution")
+            st.bar_chart(risk_counts)
+        with v2:
+            if industry_label in filtered_display.columns:
+                by_dept = (
+                    filtered_display.groupby(industry_label, dropna=False)[risk_score_label]
+                    .mean()
+                    .sort_values(ascending=False)
+                )
+                st.write("Average risk score by department")
+                st.bar_chart(by_dept)
 
-    st.subheader("At-Risk Employees")
-    high_risk = filtered[filtered["risk_level"].astype(str) == "High"].sort_values("risk_score", ascending=False)
-    show_cols = [c for c in [INDUSTRY_COL, "profession", "age", TENURE_COL, "risk_score", "risk_level"] if c in high_risk.columns]
-    st.dataframe(high_risk[show_cols], use_container_width=True)
+        st.subheader("Model Performance")
+        st.dataframe(
+            model_score_display.style.format(
+                {c: "{:.3f}" for c in model_score_display.columns if c != "Model"}
+            ),
+            use_container_width=True,
+            hide_index=True,
+        )
+        st.info(f"Best model by ROC-AUC: {best_name}")
 
-    st.subheader("Actionable Retention Recommendations")
-    if len(high_risk) > 0:
-        selected_idx = st.selectbox("Pick an at-risk employee row", options=high_risk.index.tolist())
-        employee = high_risk.loc[selected_idx]
-        recs = retention_recommendations(employee, scored_df)
-        for rec in recs:
-            st.write(f"- {rec}")
-    else:
-        st.write("No high-risk employees in current filter.")
+    with tabs[1]:
+        high_risk = filtered_display[
+            filtered_display[risk_level_label].astype(str) == "High"
+        ].sort_values(risk_score_label, ascending=False)
+        high_risk_raw = filtered.loc[high_risk.index]
+        show_cols = [
+            c
+            for c in [
+                industry_label,
+                pretty_label("profession"),
+                pretty_label("age"),
+                tenure_label,
+                risk_score_label,
+                risk_level_label,
+            ]
+            if c in high_risk.columns
+        ]
+        st.subheader("High-Risk Employee List")
+        st.dataframe(high_risk[show_cols], use_container_width=True, hide_index=True)
+
+        st.subheader("Actionable Retention Recommendations")
+        if len(high_risk_raw) > 0:
+            option_map = {}
+            for idx in high_risk_raw.index.tolist():
+                dept = str(high_risk.loc[idx, industry_label]) if industry_label in high_risk.columns else "N/A"
+                score = float(high_risk.loc[idx, risk_score_label])
+                label = f"Employee {idx} | {dept} | score {score:.2f}"
+                option_map[label] = idx
+            selected_label = st.selectbox("Select employee", options=list(option_map.keys()))
+            selected_idx = option_map[selected_label]
+            employee = high_risk_raw.loc[selected_idx]
+            level = high_risk.loc[selected_idx, risk_level_label]
+            st.markdown(
+                f"Selected risk level: {risk_chip(level)}",
+                unsafe_allow_html=True,
+            )
+            recs = retention_recommendations(employee, scored_df)
+            for rec in recs:
+                st.write(f"- {rec}")
+        else:
+            st.write("No high-risk employees in the current filter.")
+
+    with tabs[2]:
+        st.subheader("Manual Employee Prediction")
+        st.caption("Use this form for a hypothetical or new employee scenario.")
+        with st.form("manual_form"):
+            input_data = {}
+            for col in model_bundle["feature_cols"]:
+                if col in raw_df.select_dtypes(include=[np.number]).columns:
+                    median_val = float(pd.to_numeric(raw_df[col], errors="coerce").median())
+                    input_data[col] = st.number_input(pretty_label(col), value=median_val)
+                else:
+                    choices = sorted(raw_df[col].dropna().astype(str).unique().tolist())
+                    choice_map = build_choice_map(col, choices)
+                    options = list(choice_map.keys()) if choice_map else [""]
+                    selected_display = st.selectbox(pretty_label(col), options=options, index=0)
+                    input_data[col] = choice_map.get(selected_display, "")
+            submitted = st.form_submit_button("Predict Risk")
+
+        if submitted:
+            manual_df = pd.DataFrame([input_data])
+            risk = float(best_model.predict_proba(manual_df)[0, 1])
+            if risk < 0.4:
+                level = "Low"
+            elif risk < 0.7:
+                level = "Medium"
+            else:
+                level = "High"
+
+            st.markdown(f"Prediction: {risk_chip(level)}", unsafe_allow_html=True)
+            st.metric("Predicted Turnover Probability", f"{risk:.2%}")
+            manual_recs = retention_recommendations(manual_df.iloc[0], scored_df)
+            st.write("Recommended actions:")
+            for rec in manual_recs:
+                st.write(f"- {rec}")
+
+    with tabs[3]:
+        render_risk_interpretation_guide()
 
     st.sidebar.markdown("---")
-    st.sidebar.subheader("Manual Employee Prediction")
-    with st.sidebar.form("manual_form"):
+    st.sidebar.subheader("Quick Manual Prediction")
+    with st.sidebar.form("manual_form_sidebar"):
         input_data = {}
         for col in model_bundle["feature_cols"]:
             if col in raw_df.select_dtypes(include=[np.number]).columns:
                 median_val = float(pd.to_numeric(raw_df[col], errors="coerce").median())
-                input_data[col] = st.number_input(col, value=median_val)
+                input_data[col] = st.number_input(pretty_label(col), value=median_val)
             else:
-                choices = raw_df[col].dropna().astype(str).unique().tolist()
-                default_choice = choices[0] if choices else ""
-                input_data[col] = st.selectbox(col, options=choices if choices else [""], index=0)
-        submitted = st.form_submit_button("Predict Risk")
+                choices = sorted(raw_df[col].dropna().astype(str).unique().tolist())
+                choice_map = build_choice_map(col, choices)
+                options = list(choice_map.keys()) if choice_map else [""]
+                selected_display = st.selectbox(pretty_label(col), options=options, index=0)
+                input_data[col] = choice_map.get(selected_display, "")
+        submitted = st.form_submit_button("Predict in Sidebar")
 
     if submitted:
         manual_df = pd.DataFrame([input_data])
@@ -326,7 +601,8 @@ def main():
         else:
             level = "High"
 
-        st.sidebar.success(f"Predicted turnover risk: {risk:.2%} ({level})")
+        st.sidebar.markdown(f"Result: {risk_chip(level)}", unsafe_allow_html=True)
+        st.sidebar.metric("Predicted Probability", f"{risk:.2%}")
         manual_recs = retention_recommendations(manual_df.iloc[0], scored_df)
         st.sidebar.write("Recommended actions:")
         for rec in manual_recs:
