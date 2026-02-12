@@ -21,6 +21,16 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+## React Frontend Prototype
+A separate React UI is available in `frontend/` for a cleaner product-style experience.
+
+Run:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
 ## Notes
 - Target column is expected to be `event` (1 = turnover, 0 = stayed).
 - The app auto-handles non-UTF8 CSV encoding with a latin1 fallback.
