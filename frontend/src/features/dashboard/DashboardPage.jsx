@@ -4,6 +4,7 @@ import MetricGrid from "./components/MetricGrid";
 import RiskDistribution from "./components/RiskDistribution";
 import DepartmentRiskList from "./components/DepartmentRiskList";
 import HighRiskTable from "./components/HighRiskTable";
+import DemoChecklist from "./components/DemoChecklist";
 
 export default function DashboardPage({ sourceData, activeTab, defaultFilters }) {
   const [filters, setFilters] = useState({
@@ -66,6 +67,7 @@ export default function DashboardPage({ sourceData, activeTab, defaultFilters })
         />
       </aside>
       <section className="dashboard-main">
+        {activeTab === "Overview" ? <DemoChecklist /> : null}
         <MetricGrid items={metrics} />
         <div className="two-col">
           <RiskDistribution data={filteredData} />

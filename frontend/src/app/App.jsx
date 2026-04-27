@@ -27,7 +27,7 @@ export default function App() {
   return (
     <AppShell
       title="HR Turnover Risk Explorer"
-      subtitle="A personal project prototype for exploring employee turnover signals"
+      subtitle="Class demo build: turnover risk insights with actionable HR recommendations"
       tabs={TABS}
       activeTab={activeTab}
       onTabChange={setActiveTab}

@@ -339,3 +339,9 @@ th, td {
     align-items: flex-start;
   }
 }
+
+
+.demo-panel {
+  border-left: 6px solid var(--brand);
+  background: linear-gradient(135deg, #f8fffd 0%, #f2f9ff 100%);
+}
