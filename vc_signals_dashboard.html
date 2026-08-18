@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VC Investment Signals Dashboard</title>
+  <style>
+    :root {
+      --bg: #f3f6fb;
+      --panel: #ffffff;
+      --ink: #10223a;
+      --muted: #5b6b80;
+      --line: #dbe4ef;
+      --accent: #0b6bcb;
+      --accent-2: #0f9d8f;
+      --accent-3: #f39c12;
+      --accent-4: #cf3d5c;
+      --shadow: 0 14px 30px rgba(16, 34, 58, 0.08);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Manrope", "Segoe UI", "Helvetica Neue", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at 10% 10%, #e9f2ff 0%, transparent 30%),
+                  radial-gradient(circle at 90% 0%, #e7fbf8 0%, transparent 28%),
+                  var(--bg);
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 18px 40px;
+    }
+
+    .hero {
+      background: linear-gradient(130deg, #10223a 0%, #153a64 55%, #0e4e7f 100%);
+      color: #fff;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .hero h1 { margin: 0 0 6px; font-size: clamp(1.4rem, 3vw, 2rem); }
+    .hero p { margin: 0; color: #d8e8f8; }
+    .methodology {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #e3eefb;
+      font-size: .9rem;
+      line-height: 1.45;
+    }
+    .updated {
+      margin-top: 8px;
+      font-size: .82rem;
+      color: #b8d2ee;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      letter-spacing: .2px;
+    }
+
+    .span-3 { grid-column: span 3; }
+    .span-6 { grid-column: span 6; }
+    .span-12 { grid-column: span 12; }
+
+    .kpi { font-size: 1.7rem; font-weight: 800; }
+    .hint { color: var(--muted); font-size: .9rem; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: .8rem;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .ai { background: #e9f2ff; color: #0b4b92; border-color: #b6d4ff; }
+    .startup { background: #e8fbf4; color: #0d745c; border-color: #b9f0de; }
+    .eng { background: #fff6e9; color: #a8670a; border-color: #ffd9a6; }
+    .fund { background: #fdebf0; color: #9d2c44; border-color: #f4b5c5; }
+
+    .bars { display: flex; flex-direction: column; gap: 10px; }
+    .bar-row { display: grid; grid-template-columns: 160px 1fr 70px; gap: 10px; align-items: center; }
+    .label { font-weight: 700; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .track { height: 14px; border-radius: 999px; background: #edf2f8; overflow: hidden; border: 1px solid #dde7f2; }
+    .fill { height: 100%; border-radius: 999px; }
+    .score { font-weight: 800; text-align: right; font-size: .85rem; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { padding: 8px 6px; border-bottom: 1px solid #ebf0f6; text-align: left; }
+    th { font-size: .8rem; text-transform: uppercase; letter-spacing: .3px; color: var(--muted); }
+
+    .status { margin-top: 10px; color: #dbe9f7; font-size: .9rem; }
+
+    @media (max-width: 960px) {
+      .span-3, .span-6, .span-12 { grid-column: span 12; }
+      .bar-row { grid-template-columns: 120px 1fr 58px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>VC Investment Signals</h1>
+      <p>Theme intelligence from multi-handle Twitter/X analysis.</p>
+      <div class="methodology">Signals are scored by frequency and concentration. Each term is weighted by how often it appears in an investor's tweets and how uniquely it stands out compared to other terms. A higher score means stronger and more concentrated conviction around that theme. Cross-handle signals show terms that appeared independently across multiple investor accounts, making them the strongest indicators of where venture attention is focused right now.</div>
+      <div class="updated">Last updated: May 2026</div>
+      <div class="status">Data source embedded from themes_export.csv.</div>
+    </section>
+
+    <section class="grid">
+      <article class="card span-3">
+        <h2>Total Qualified Signals</h2>
+        <div class="kpi" id="kpiSignals">0</div>
+        <div class="hint">After theme + keyword filtering.</div>
+      </article>
+
+      <article class="card span-3">
+        <h2>Cross-Handle Signals</h2>
+        <div class="kpi" id="kpiCross">0</div>
+        <div class="hint">Themes appearing across 2+ handles.</div>
+      </article>
+
+      <article class="card span-3">
+        <h2>Handles Covered</h2>
+        <div class="kpi" id="kpiHandles">0</div>
+        <div class="hint">Distinct accounts represented.</div>
+      </article>
+
+      <article class="card span-3">
+        <h2>Theme Buckets</h2>
+        <div class="chips">
+          <span class="chip ai">AI/ML</span>
+          <span class="chip startup">Startups</span>
+          <span class="chip eng">Engineering</span>
+          <span class="chip fund">Funding</span>
+        </div>
+      </article>
+
+      <article class="card span-6">
+        <h2>Top Cross-Handle Signals by Strength</h2>
+        <div class="bars" id="strengthBars"></div>
+      </article>
+
+      <article class="card span-6">
+        <h2>Top Signals by Handle Overlap</h2>
+        <div class="bars" id="overlapBars"></div>
+      </article>
+
+      <article class="card span-12">
+        <h2>Top Themes by Category</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Top Terms</th>
+            </tr>
+          </thead>
+          <tbody id="topThemesTable"></tbody>
+        </table>
+      </article>
+
+    </section>
+  </div>
+
+  <script>
+    const CATEGORY_MAP = {
+      "AI/ML": "AI/ML",
+      "Startups": "Startups",
+      "Engineering/Product": "Engineering",
+      "Funding/Capital": "Funding"
+    };
+
+    const ALLOWED_BUCKETS = new Set(Object.keys(CATEGORY_MAP));
+    const GENERIC_WORDS = new Set([
+      "not", "re", "just", "new", "people", "so", "like", "one", "no", "now", "team",
+      "great", "good", "think", "going", "get", "many", "interesting", "out", "go",
+      "week", "time", "yes", "charts", "excited", "thank", "conversation", "see", "know",
+      "need", "make", "way", "still", "even", "well", "back", "first", "last", "next",
+      "really", "actually", "already", "maybe", "probably", "thing", "things", "lot",
+      "right", "better", "worse", "almost", "quite", "rather", "enough", "around",
+      "away", "off", "done", "said", "made", "try", "look", "come", "want", "use",
+      "find", "work", "help", "say", "set", "twitter", "year", "years", "day", "days",
+      "open", "money", "companies"
+    ]);
+
+    const EMBEDDED_ROWS = [{"section": "per_handle_top10", "handle": "@sequoia", "keyword_or_theme": "ai", "theme_bucket": "AI/ML", "count_or_handles": "87", "score": "208.4849", "handles": ""}, {"section": "per_handle_top10", "handle": "@sequoia", "keyword_or_theme": "sequoia", "theme_bucket": "General", "count_or_handles": "64", "score": "164.6918", "handles": ""}, {"section": "per_handle_top10", "handle": "@sequoia", "keyword_or_theme": "bhalligan", "theme_bucket": "General", "count_or_handles": "45", "score": "129.2311", "handles": ""}, {"section": "per_handle_top10", "handle": "@sequoia", "keyword_or_theme": "alfred lin", "theme_bucket": "General", "count_or_handles": "33", "score": "112.3520", "handles": ""}, {"section": "per_handle_top10", "handle": "@sequoia", "keyword_or_theme": "alfred", "theme_bucket": "General", "count_or_handles": "28", "score": "94.3107", "handles": ""}, {"section": "per_handle_top10", "handle": "@sequoia", "keyword_or_theme": "lin", "theme_bucket": "General", "count_or_handles": "26", "score": "88.5198", "handles": ""}, {"section": "per_handle_top10", "handle": "@sequoia", "keyword_or_theme": "gradypb", "theme_bucket": "General", "count_or_handles": "26", "score": "88.5198", "handles": ""}, {"section": "per_handle_top10", "handle": "@sequoia", "keyword_or_theme": "andrew reed", "theme_bucket": "General", "count_or_handles": "23", "score": "86.3881", "handles": ""}, {"section": "per_handle_top10", "handle": "@sequoia", "keyword_or_theme": "ai ascent", "theme_bucket": "AI/ML", "count_or_handles": "23", "score": "86.3881", "handles": ""}, {"section": "per_handle_top10", "handle": "@sequoia", "keyword_or_theme": "sonyatweetybird", "theme_bucket": "General", "count_or_handles": "21", "score": "75.7974", "handles": ""}, {"section": "per_handle_top10", "handle": "@a16z", "keyword_or_theme": "ai", "theme_bucket": "AI/ML", "count_or_handles": "101", "score": "248.8713", "handles": ""}, {"section": "per_handle_top10", "handle": "@a16z", "keyword_or_theme": "a16z", "theme_bucket": "General", "count_or_handles": "36", "score": "110.6158", "handles": ""}, {"section": "per_handle_top10", "handle": "@a16z", "keyword_or_theme": "software", "theme_bucket": "Engineering/Product", "count_or_handles": "27", "score": "100.9568", "handles": ""}, {"section": "per_handle_top10", "handle": "@a16z", "keyword_or_theme": "ceo", "theme_bucket": "General", "count_or_handles": "27", "score": "92.4880", "handles": ""}, {"section": "per_handle_top10", "handle": "@a16z", "keyword_or_theme": "world", "theme_bucket": "General", "count_or_handles": "25", "score": "90.9764", "handles": ""}, {"section": "per_handle_top10", "handle": "@a16z", "keyword_or_theme": "says", "theme_bucket": "General", "count_or_handles": "23", "score": "80.6271", "handles": ""}, {"section": "per_handle_top10", "handle": "@a16z", "keyword_or_theme": "pmarca", "theme_bucket": "General", "count_or_handles": "21", "score": "75.4433", "handles": ""}, {"section": "per_handle_top10", "handle": "@a16z", "keyword_or_theme": "marc andreessen", "theme_bucket": "General", "count_or_handles": "19", "score": "74.3088", "handles": ""}, {"section": "per_handle_top10", "handle": "@a16z", "keyword_or_theme": "tech", "theme_bucket": "General", "count_or_handles": "20", "score": "72.7811", "handles": ""}, {"section": "per_handle_top10", "handle": "@a16z", "keyword_or_theme": "agents", "theme_bucket": "AI/ML", "count_or_handles": "19", "score": "72.0710", "handles": ""}, {"section": "per_handle_top10", "handle": "@ycombinator", "keyword_or_theme": "ai", "theme_bucket": "AI/ML", "count_or_handles": "108", "score": "244.3949", "handles": ""}, {"section": "per_handle_top10", "handle": "@ycombinator", "keyword_or_theme": "agents", "theme_bucket": "AI/ML", "count_or_handles": "50", "score": "145.4771", "handles": ""}, {"section": "per_handle_top10", "handle": "@ycombinator", "keyword_or_theme": "yc", "theme_bucket": "General", "count_or_handles": "44", "score": "131.1270", "handles": ""}, {"section": "per_handle_top10", "handle": "@ycombinator", "keyword_or_theme": "ai agents", "theme_bucket": "AI/ML", "count_or_handles": "22", "score": "84.9314", "handles": ""}, {"section": "per_handle_top10", "handle": "@ycombinator", "keyword_or_theme": "data", "theme_bucket": "General", "count_or_handles": "23", "score": "82.8619", "handles": ""}, {"section": "per_handle_top10", "handle": "@ycombinator", "keyword_or_theme": "teams", "theme_bucket": "General", "count_or_handles": "20", "score": "77.2104", "handles": ""}, {"section": "per_handle_top10", "handle": "@ycombinator", "keyword_or_theme": "agent", "theme_bucket": "AI/ML", "count_or_handles": "20", "score": "76.0672", "handles": ""}, {"section": "per_handle_top10", "handle": "@ycombinator", "keyword_or_theme": "companies", "theme_bucket": "Startups", "count_or_handles": "21", "score": "75.6565", "handles": ""}, {"section": "per_handle_top10", "handle": "@ycombinator", "keyword_or_theme": "building", "theme_bucket": "Startups", "count_or_handles": "21", "score": "75.6565", "handles": ""}, {"section": "per_handle_top10", "handle": "@ycombinator", "keyword_or_theme": "series", "theme_bucket": "Funding/Capital", "count_or_handles": "19", "score": "72.2638", "handles": ""}, {"section": "per_handle_top10", "handle": "@garrytan", "keyword_or_theme": "ai", "theme_bucket": "AI/ML", "count_or_handles": "62", "score": "171.8107", "handles": ""}, {"section": "per_handle_top10", "handle": "@garrytan", "keyword_or_theme": "gbrain", "theme_bucket": "General", "count_or_handles": "42", "score": "129.3365", "handles": ""}, {"section": "per_handle_top10", "handle": "@garrytan", "keyword_or_theme": "data", "theme_bucket": "General", "count_or_handles": "20", "score": "77.8074", "handles": ""}, {"section": "per_handle_top10", "handle": "@garrytan", "keyword_or_theme": "agent", "theme_bucket": "AI/ML", "count_or_handles": "20", "score": "74.3704", "handles": ""}, {"section": "per_handle_top10", "handle": "@garrytan", "keyword_or_theme": "code", "theme_bucket": "AI/ML", "count_or_handles": "18", "score": "67.9066", "handles": ""}, {"section": "per_handle_top10", "handle": "@garrytan", "keyword_or_theme": "data center", "theme_bucket": "General", "count_or_handles": "13", "score": "56.6849", "handles": ""}, {"section": "per_handle_top10", "handle": "@garrytan", "keyword_or_theme": "yc", "theme_bucket": "General", "count_or_handles": "14", "score": "55.3687", "handles": ""}, {"section": "per_handle_top10", "handle": "@garrytan", "keyword_or_theme": "personal", "theme_bucket": "General", "count_or_handles": "13", "score": "53.2741", "handles": ""}, {"section": "per_handle_top10", "handle": "@garrytan", "keyword_or_theme": "openclaw", "theme_bucket": "General", "count_or_handles": "12", "score": "49.1761", "handles": ""}, {"section": "per_handle_top10", "handle": "@garrytan", "keyword_or_theme": "open", "theme_bucket": "AI/ML", "count_or_handles": "12", "score": "49.1761", "handles": ""}, {"section": "per_handle_top10", "handle": "@pmarca", "keyword_or_theme": "ai", "theme_bucket": "AI/ML", "count_or_handles": "29", "score": "90.0493", "handles": ""}, {"section": "per_handle_top10", "handle": "@pmarca", "keyword_or_theme": "data centers", "theme_bucket": "General", "count_or_handles": "13", "score": "50.5090", "handles": ""}, {"section": "per_handle_top10", "handle": "@pmarca", "keyword_or_theme": "data", "theme_bucket": "General", "count_or_handles": "13", "score": "47.3739", "handles": ""}, {"section": "per_handle_top10", "handle": "@pmarca", "keyword_or_theme": "centers", "theme_bucket": "General", "count_or_handles": "11", "score": "42.7384", "handles": ""}, {"section": "per_handle_top10", "handle": "@pmarca", "keyword_or_theme": "nuclear power", "theme_bucket": "Defense/Deeptech", "count_or_handles": "6", "score": "29.3815", "handles": ""}, {"section": "per_handle_top10", "handle": "@pmarca", "keyword_or_theme": "power", "theme_bucket": "General", "count_or_handles": "5", "score": "24.4845", "handles": ""}, {"section": "per_handle_top10", "handle": "@pmarca", "keyword_or_theme": "nuclear", "theme_bucket": "Defense/Deeptech", "count_or_handles": "5", "score": "24.4845", "handles": ""}, {"section": "per_handle_top10", "handle": "@pmarca", "keyword_or_theme": "book", "theme_bucket": "General", "count_or_handles": "5", "score": "23.3688", "handles": ""}, {"section": "per_handle_top10", "handle": "@pmarca", "keyword_or_theme": "sign", "theme_bucket": "General", "count_or_handles": "5", "score": "22.4572", "handles": ""}, {"section": "per_handle_top10", "handle": "@pmarca", "keyword_or_theme": "jobs", "theme_bucket": "Markets/Macro", "count_or_handles": "4", "score": "19.5876", "handles": ""}, {"section": "per_handle_top10", "handle": "@bhorowitz", "keyword_or_theme": "a16z", "theme_bucket": "General", "count_or_handles": "56", "score": "149.3524", "handles": ""}, {"section": "per_handle_top10", "handle": "@bhorowitz", "keyword_or_theme": "bhorowitz", "theme_bucket": "General", "count_or_handles": "35", "score": "107.5366", "handles": ""}, {"section": "per_handle_top10", "handle": "@bhorowitz", "keyword_or_theme": "ai", "theme_bucket": "AI/ML", "count_or_handles": "25", "score": "86.9484", "handles": ""}, {"section": "per_handle_top10", "handle": "@bhorowitz", "keyword_or_theme": "pmarca", "theme_bucket": "General", "count_or_handles": "23", "score": "79.9926", "handles": ""}, {"section": "per_handle_top10", "handle": "@bhorowitz", "keyword_or_theme": "skupor", "theme_bucket": "General", "count_or_handles": "14", "score": "55.2712", "handles": ""}, {"section": "per_handle_top10", "handle": "@bhorowitz", "keyword_or_theme": "david", "theme_bucket": "General", "count_or_handles": "13", "score": "54.2241", "handles": ""}, {"section": "per_handle_top10", "handle": "@bhorowitz", "keyword_or_theme": "crypto", "theme_bucket": "Crypto/Web3", "count_or_handles": "13", "score": "53.1836", "handles": ""}, {"section": "per_handle_top10", "handle": "@bhorowitz", "keyword_or_theme": "eriktorenberg", "theme_bucket": "General", "count_or_handles": "12", "score": "49.0925", "handles": ""}, {"section": "per_handle_top10", "handle": "@bhorowitz", "keyword_or_theme": "episode", "theme_bucket": "General", "count_or_handles": "12", "score": "49.0925", "handles": ""}, {"section": "per_handle_top10", "handle": "@bhorowitz", "keyword_or_theme": "horowitz", "theme_bucket": "General", "count_or_handles": "11", "score": "46.8391", "handles": ""}, {"section": "per_handle_top10", "handle": "@roelofbotha", "keyword_or_theme": "sequoia", "theme_bucket": "General", "count_or_handles": "88", "score": "204.4648", "handles": ""}, {"section": "per_handle_top10", "handle": "@roelofbotha", "keyword_or_theme": "founders", "theme_bucket": "Startups", "count_or_handles": "29", "score": "99.2402", "handles": ""}, {"section": "per_handle_top10", "handle": "@roelofbotha", "keyword_or_theme": "companies", "theme_bucket": "Startups", "count_or_handles": "28", "score": "94.7614", "handles": ""}, {"section": "per_handle_top10", "handle": "@roelofbotha", "keyword_or_theme": "ai", "theme_bucket": "AI/ML", "count_or_handles": "26", "score": "91.0551", "handles": ""}, {"section": "per_handle_top10", "handle": "@roelofbotha", "keyword_or_theme": "crucible moments", "theme_bucket": "General", "count_or_handles": "18", "score": "74.0740", "handles": ""}, {"section": "per_handle_top10", "handle": "@roelofbotha", "keyword_or_theme": "crucible", "theme_bucket": "General", "count_or_handles": "16", "score": "63.5540", "handles": ""}, {"section": "per_handle_top10", "handle": "@roelofbotha", "keyword_or_theme": "seed", "theme_bucket": "Startups", "count_or_handles": "15", "score": "61.7283", "handles": ""}, {"section": "per_handle_top10", "handle": "@roelofbotha", "keyword_or_theme": "moments", "theme_bucket": "General", "count_or_handles": "15", "score": "61.7283", "handles": ""}, {"section": "per_handle_top10", "handle": "@roelofbotha", "keyword_or_theme": "jack", "theme_bucket": "General", "count_or_handles": "14", "score": "56.5756", "handles": ""}, {"section": "per_handle_top10", "handle": "@roelofbotha", "keyword_or_theme": "open", "theme_bucket": "AI/ML", "count_or_handles": "13", "score": "55.6696", "handles": ""}, {"section": "per_handle_top10", "handle": "@jason", "keyword_or_theme": "knicks", "theme_bucket": "General", "count_or_handles": "21", "score": "75.9142", "handles": ""}, {"section": "per_handle_top10", "handle": "@jason", "keyword_or_theme": "uber", "theme_bucket": "General", "count_or_handles": "19", "score": "75.0772", "handles": ""}, {"section": "per_handle_top10", "handle": "@jason", "keyword_or_theme": "ai", "theme_bucket": "AI/ML", "count_or_handles": "20", "score": "73.2750", "handles": ""}, {"section": "per_handle_top10", "handle": "@jason", "keyword_or_theme": "twistartups", "theme_bucket": "General", "count_or_handles": "16", "score": "61.2203", "handles": ""}, {"section": "per_handle_top10", "handle": "@jason", "keyword_or_theme": "grok", "theme_bucket": "General", "count_or_handles": "14", "score": "57.3235", "handles": ""}, {"section": "per_handle_top10", "handle": "@jason", "keyword_or_theme": "thisweeknai", "theme_bucket": "General", "count_or_handles": "14", "score": "55.3200", "handles": ""}, {"section": "per_handle_top10", "handle": "@jason", "keyword_or_theme": "jason", "theme_bucket": "General", "count_or_handles": "12", "score": "50.0949", "handles": ""}, {"section": "per_handle_top10", "handle": "@jason", "keyword_or_theme": "benstiller", "theme_bucket": "General", "count_or_handles": "12", "score": "49.1344", "handles": ""}, {"section": "per_handle_top10", "handle": "@jason", "keyword_or_theme": "rolex", "theme_bucket": "General", "count_or_handles": "11", "score": "49.0848", "handles": ""}, {"section": "per_handle_top10", "handle": "@jason", "keyword_or_theme": "waymo", "theme_bucket": "General", "count_or_handles": "11", "score": "47.9259", "handles": ""}, {"section": "per_handle_top10", "handle": "@naval", "keyword_or_theme": "ai", "theme_bucket": "AI/ML", "count_or_handles": "32", "score": "104.0413", "handles": ""}, {"section": "per_handle_top10", "handle": "@naval", "keyword_or_theme": "naval", "theme_bucket": "General", "count_or_handles": "24", "score": "83.3864", "handles": ""}, {"section": "per_handle_top10", "handle": "@naval", "keyword_or_theme": "coding", "theme_bucket": "AI/ML", "count_or_handles": "15", "score": "65.2486", "handles": ""}, {"section": "per_handle_top10", "handle": "@naval", "keyword_or_theme": "software", "theme_bucket": "Engineering/Product", "count_or_handles": "13", "score": "55.3097", "handles": ""}, {"section": "per_handle_top10", "handle": "@naval", "keyword_or_theme": "knowledge", "theme_bucket": "General", "count_or_handles": "11", "score": "51.7724", "handles": ""}, {"section": "per_handle_top10", "handle": "@naval", "keyword_or_theme": "money", "theme_bucket": "Funding/Capital", "count_or_handles": "10", "score": "48.6073", "handles": ""}, {"section": "per_handle_top10", "handle": "@naval", "keyword_or_theme": "vibe", "theme_bucket": "General", "count_or_handles": "10", "score": "45.7305", "handles": ""}, {"section": "per_handle_top10", "handle": "@naval", "keyword_or_theme": "full episode", "theme_bucket": "General", "count_or_handles": "10", "score": "44.5526", "handles": ""}, {"section": "per_handle_top10", "handle": "@naval", "keyword_or_theme": "vibe coding", "theme_bucket": "AI/ML", "count_or_handles": "9", "score": "42.3592", "handles": ""}, {"section": "per_handle_top10", "handle": "@naval", "keyword_or_theme": "science", "theme_bucket": "General", "count_or_handles": "8", "score": "40.3444", "handles": ""}, {"section": "per_handle_top10", "handle": "@semil", "keyword_or_theme": "ai", "theme_bucket": "AI/ML", "count_or_handles": "35", "score": "113.4481", "handles": ""}, {"section": "per_handle_top10", "handle": "@semil", "keyword_or_theme": "semil", "theme_bucket": "General", "count_or_handles": "30", "score": "102.3382", "handles": ""}, {"section": "per_handle_top10", "handle": "@semil", "keyword_or_theme": "vc", "theme_bucket": "General", "count_or_handles": "13", "score": "54.8886", "handles": ""}, {"section": "per_handle_top10", "handle": "@semil", "keyword_or_theme": "game", "theme_bucket": "General", "count_or_handles": "13", "score": "54.8886", "handles": ""}, {"section": "per_handle_top10", "handle": "@semil", "keyword_or_theme": "mignano", "theme_bucket": "General", "count_or_handles": "13", "score": "52.8847", "handles": ""}, {"section": "per_handle_top10", "handle": "@semil", "keyword_or_theme": "aashaysanghvi", "theme_bucket": "General", "count_or_handles": "13", "score": "52.8847", "handles": ""}, {"section": "per_handle_top10", "handle": "@semil", "keyword_or_theme": "seed", "theme_bucket": "Startups", "count_or_handles": "12", "score": "50.6664", "handles": ""}, {"section": "per_handle_top10", "handle": "@semil", "keyword_or_theme": "founders", "theme_bucket": "Startups", "count_or_handles": "11", "score": "46.4442", "handles": ""}, {"section": "per_handle_top10", "handle": "@semil", "keyword_or_theme": "funds", "theme_bucket": "General", "count_or_handles": "10", "score": "45.0989", "handles": ""}, {"section": "per_handle_top10", "handle": "@semil", "keyword_or_theme": "fund", "theme_bucket": "Funding/Capital", "count_or_handles": "10", "score": "45.0989", "handles": ""}, {"section": "per_handle_top10", "handle": "@pitdesi", "keyword_or_theme": "ai", "theme_bucket": "AI/ML", "count_or_handles": "21", "score": "77.7911", "handles": ""}, {"section": "per_handle_top10", "handle": "@pitdesi", "keyword_or_theme": "devahaz", "theme_bucket": "General", "count_or_handles": "13", "score": "51.4235", "handles": ""}, {"section": "per_handle_top10", "handle": "@pitdesi", "keyword_or_theme": "fort", "theme_bucket": "General", "count_or_handles": "8", "score": "39.8822", "handles": ""}, {"section": "per_handle_top10", "handle": "@pitdesi", "keyword_or_theme": "money", "theme_bucket": "Funding/Capital", "count_or_handles": "8", "score": "36.1222", "handles": ""}, {"section": "per_handle_top10", "handle": "@pitdesi", "keyword_or_theme": "company", "theme_bucket": "Startups", "count_or_handles": "8", "score": "36.1222", "handles": ""}, {"section": "per_handle_top10", "handle": "@pitdesi", "keyword_or_theme": "city", "theme_bucket": "General", "count_or_handles": "8", "score": "36.1222", "handles": ""}, {"section": "per_handle_top10", "handle": "@pitdesi", "keyword_or_theme": "only", "theme_bucket": "General", "count_or_handles": "8", "score": "35.1799", "handles": ""}, {"section": "per_handle_top10", "handle": "@pitdesi", "keyword_or_theme": "though", "theme_bucket": "General", "count_or_handles": "7", "score": "32.5416", "handles": ""}, {"section": "per_handle_top10", "handle": "@pitdesi", "keyword_or_theme": "openai", "theme_bucket": "AI/ML", "count_or_handles": "7", "score": "32.5416", "handles": ""}, {"section": "per_handle_top10", "handle": "@pitdesi", "keyword_or_theme": "real", "theme_bucket": "General", "count_or_handles": "7", "score": "31.6069", "handles": ""}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "ai", "theme_bucket": "AI/ML", "count_or_handles": "11", "score": "2056.1702", "handles": "@a16z|@bhorowitz|@garrytan|@jason|@naval|@pitdesi|@pmarca|@roelofbotha|@semil|@sequoia|@ycombinator"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "data", "theme_bucket": "General", "count_or_handles": "3", "score": "264.0432", "handles": "@garrytan|@pmarca|@ycombinator"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "sequoia", "theme_bucket": "General", "count_or_handles": "2", "score": "521.1566", "handles": "@roelofbotha|@sequoia"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "a16z", "theme_bucket": "General", "count_or_handles": "2", "score": "351.9683", "handles": "@a16z|@bhorowitz"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "agents", "theme_bucket": "AI/ML", "count_or_handles": "2", "score": "286.5481", "handles": "@a16z|@ycombinator"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "yc", "theme_bucket": "General", "count_or_handles": "2", "score": "244.4958", "handles": "@garrytan|@ycombinator"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "companies", "theme_bucket": "Startups", "count_or_handles": "2", "score": "219.4179", "handles": "@roelofbotha|@ycombinator"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "pmarca", "theme_bucket": "General", "count_or_handles": "2", "score": "199.4359", "handles": "@a16z|@bhorowitz"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "software", "theme_bucket": "Engineering/Product", "count_or_handles": "2", "score": "196.2665", "handles": "@a16z|@naval"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "agent", "theme_bucket": "AI/ML", "count_or_handles": "2", "score": "190.4376", "handles": "@garrytan|@ycombinator"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "founders", "theme_bucket": "Startups", "count_or_handles": "2", "score": "185.6844", "handles": "@roelofbotha|@semil"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "seed", "theme_bucket": "Startups", "count_or_handles": "2", "score": "139.3948", "handles": "@roelofbotha|@semil"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "open", "theme_bucket": "AI/ML", "count_or_handles": "2", "score": "129.8457", "handles": "@garrytan|@roelofbotha"}, {"section": "cross_handle_signal", "handle": "", "keyword_or_theme": "money", "theme_bucket": "Funding/Capital", "count_or_handles": "2", "score": "102.7295", "handles": "@naval|@pitdesi"}];
+
+    function parseCSV(text) {
+      const rows = [];
+      let row = [];
+      let cell = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
+
+        if (ch === '"') {
+          if (inQuotes && next === '"') {
+            cell += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (ch === ',' && !inQuotes) {
+          row.push(cell);
+          cell = "";
+        } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+          if (ch === '\r' && next === '\n') i++;
+          row.push(cell);
+          if (row.some(v => v !== "")) rows.push(row);
+          row = [];
+          cell = "";
+        } else {
+          cell += ch;
+        }
+      }
+
+      if (cell.length || row.length) {
+        row.push(cell);
+        if (row.some(v => v !== "")) rows.push(row);
+      }
+
+      const headers = rows.shift() || [];
+      return rows.map(r => {
+        const obj = {};
+        headers.forEach((h, idx) => { obj[h.trim()] = (r[idx] || "").trim(); });
+        return obj;
+      });
+    }
+
+    function containsGeneric(term) {
+      const parts = term.toLowerCase().split(/\s+/).filter(Boolean);
+      return parts.some(p => GENERIC_WORDS.has(p));
+    }
+
+    function themeClass(category) {
+      if (category === "AI/ML") return "ai";
+      if (category === "Startups") return "startup";
+      if (category === "Engineering") return "eng";
+      return "fund";
+    }
+
+    function barColor(category) {
+      if (category === "AI/ML") return "linear-gradient(90deg, #0b6bcb, #1ea0ff)";
+      if (category === "Startups") return "linear-gradient(90deg, #0f9d8f, #25c3b2)";
+      if (category === "Engineering") return "linear-gradient(90deg, #f39c12, #ffbb55)";
+      return "linear-gradient(90deg, #cf3d5c, #ef6a87)";
+    }
+
+    function aggregateTopByCategory(filteredRows) {
+      const scores = new Map();
+      for (const r of filteredRows) {
+        const category = CATEGORY_MAP[r.theme_bucket];
+        const term = (r.keyword_or_theme || "").toLowerCase();
+        const key = `${category}||${term}`;
+        const score = Number(r.score || 0);
+        scores.set(key, (scores.get(key) || 0) + (Number.isFinite(score) ? score : 0));
+      }
+
+      const byCategory = new Map([ ["AI/ML", []], ["Startups", []], ["Engineering", []], ["Funding", []] ]);
+      for (const [key, score] of scores.entries()) {
+        const [category, term] = key.split("||");
+        byCategory.get(category).push({ term, score });
+      }
+      for (const [category, arr] of byCategory.entries()) {
+        arr.sort((a, b) => b.score - a.score);
+        byCategory.set(category, arr.slice(0, 8));
+      }
+      return byCategory;
+    }
+
+    function renderBars(el, items, valueKey) {
+      el.innerHTML = "";
+      if (!items.length) {
+        el.innerHTML = `<div class="hint">No matching signals found for selected themes.</div>`;
+        return;
+      }
+      const max = Math.max(...items.map(i => i[valueKey])) || 1;
+
+      for (const item of items) {
+        const pct = Math.max(4, (item[valueKey] / max) * 100);
+        const row = document.createElement("div");
+        row.className = "bar-row";
+        row.innerHTML = `
+          <div class="label" title="${item.term}">${item.term}</div>
+          <div class="track"><div class="fill" style="width:${pct}%; background:${barColor(item.category)}"></div></div>
+          <div class="score">${item[valueKey].toFixed(1)}</div>
+        `;
+        el.appendChild(row);
+      }
+    }
+
+    function renderThemeTable(topByCategory) {
+      const tbody = document.getElementById("topThemesTable");
+      tbody.innerHTML = "";
+      ["AI/ML", "Startups", "Engineering", "Funding"].forEach(category => {
+        const items = topByCategory.get(category) || [];
+        const terms = items.map(i => `<span class="chip ${themeClass(category)}">${i.term}</span>`).join(" ");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td><strong>${category}</strong></td><td>${terms || '<span class="hint">No terms</span>'}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function processData(rows) {
+      const filtered = rows.filter(r => {
+        if (!ALLOWED_BUCKETS.has(r.theme_bucket)) return false;
+        const term = (r.keyword_or_theme || "").trim();
+        if (!term || containsGeneric(term)) return false;
+        return true;
+      });
+
+      const cross = filtered
+        .filter(r => r.section === "cross_handle_signal")
+        .map(r => {
+          const category = CATEGORY_MAP[r.theme_bucket];
+          const strength = Number(r.score || 0);
+          const overlap = Number(r.count_or_handles || 0);
+          return {
+            term: r.keyword_or_theme,
+            category,
+            strength: Number.isFinite(strength) ? strength : 0,
+            overlap: Number.isFinite(overlap) ? overlap : 0,
+            handles: r.handles ? r.handles.split("|").filter(Boolean) : []
+          };
+        })
+        .filter(r => r.overlap >= 2);
+
+      const perHandle = filtered.filter(r => r.section === "per_handle_top10");
+      const topByCategory = aggregateTopByCategory(perHandle.concat(cross.map(c => ({
+        theme_bucket: Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k] === c.category),
+        keyword_or_theme: c.term,
+        score: c.strength
+      }))));
+
+      const byStrength = [...cross].sort((a, b) => b.strength - a.strength).slice(0, 12);
+      const byOverlap = [...cross].sort((a, b) => (b.overlap - a.overlap) || (b.strength - a.strength)).slice(0, 12);
+
+      const coveredHandles = new Set();
+      cross.forEach(x => x.handles.forEach(h => coveredHandles.add(h)));
+
+      document.getElementById("kpiSignals").textContent = String(filtered.length);
+      document.getElementById("kpiCross").textContent = String(cross.length);
+      document.getElementById("kpiHandles").textContent = String(coveredHandles.size);
+
+      renderBars(document.getElementById("strengthBars"), byStrength, "strength");
+      renderBars(document.getElementById("overlapBars"), byOverlap, "overlap");
+      renderThemeTable(topByCategory);
+    }
+
+    processData(EMBEDDED_ROWS);
+  </script>
+</body>
+</html>
